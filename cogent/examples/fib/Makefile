@@ -1,5 +1,5 @@
 #
-# Copyright 2019, NICTA
+# Copyright 2017, NICTA
 #
 # This software may be distributed and modified according to the terms of
 # the GNU General Public License version 2. Note that NO WARRANTY is provided.
@@ -8,15 +8,15 @@
 # @TAG(NICTA_GPL)
 #
 
-NAME=bag
+NAME=fib
 
-SRC=Bag.cogent
-OUTPUT=generated # $(SRC:.cogent=-gen)
+SRC=Fib.cogent
+OUTPUT=fib # $(SRC:.cogent=-gen)
 COUTPUT=$(addsuffix .c, $(OUTPUT))
 HOUTPUT=$(addsuffix .h, $(OUTPUT))
 
 STDGUM=$(shell cogent --stdgum-dir)
-AHFILES=list.ah
+
 ACFILES=main.ac
 
 PP=$(ACFILES:.ac=_pp.ac)
@@ -26,26 +26,23 @@ ABSDIR=./abstract
 
 OBJ=$(PPINFER:.c=.o)
 
-CFLAGS+=-I. -I$(STDGUM) -std=gnu99
+CFLAGS=-I. -I$(STDGUM) -I$(STDGUM)/gum/anti -std=gnu99  # -I../plat/console 
 
-.PHONY: default mk-c clean
+.PHONY: default clean gen-anti
 .SECONDARY:
 
 default: all
 
-all: mk-c $(OBJ)
+all: gen-anti $(OBJ)
 	$(CC) -o $(NAME) $(OBJ)
 
 $(OBJ): $(PPINFER)
 
-mk-c:
+gen-anti:
 	mkdir -p $(ABSDIR)
-	cogent $(SRC) -g -Od -ogenerated --fno-fncall-as-macro --ffunc-purity-attr \
-		--infer-c-types="$(AHFILES)" \
+	cogent $(SRC) -g -o$(OUTPUT) \
 		--Wno-warn --infer-c-funcs="$(ACFILES)" \
-		--cpp="$(CPP)" \
-		--cpp-args="-x c -P \$$CPPIN -o \$$CPPOUT $(CFLAGS)" \
-		--ext-types=types.cfg \
+		--cpp-args="\$$CPPIN -o \$$CPPOUT -P $(CFLAGS)" \
 		--entry-funcs=entrypoints.cfg
 
 clean:
@@ -53,3 +50,6 @@ clean:
 	@# rm -f *-gen.*
 	rm -f $(ABSDIR)/*.h
 	rm -f $(NAME)
+	rm -f *.thy
+	rm -f ROOT
+	rm -f BUILD_INFO
