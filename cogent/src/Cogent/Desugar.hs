@@ -568,11 +568,16 @@ desugarType = \case
                [(idx,True)] -> Just . uexprToLExpr id <$> desugarExpr (dummyTypedExpr idx)
                _ -> __impossible "desugarType: TArray should not have more than 1 element taken"
     return $ TArray t' l' Unboxed mhole
+  -- NOTE: if the user specify boxed array containing boxed types with layout defined as pointer,
+  --       we simply turn that into CLayout to avoid generating extra getters & setters
   S.RT (S.TArray t l sigil tkns) -> do
     unboxedDesugared@(TArray t' l' Unboxed tkns') <- desugarType $ S.RT (S.TArray t l Unboxed tkns)
+    let ds = case sigil of
+               Boxed ro (Just (S.DLArray S.DLPtr _)) -> Boxed ro CLayout
+               _ -> desugarSigil unboxedDesugared sigil
     TArray <$> pure t'
            <*> pure l'
-           <*> pure (desugarSigil unboxedDesugared sigil)
+           <*> pure ds
            <*> pure tkns'
 #endif
   notInWHNF -> __impossible $ "desugarType (type " ++ show (pretty notInWHNF) ++ " is not in WHNF)"
