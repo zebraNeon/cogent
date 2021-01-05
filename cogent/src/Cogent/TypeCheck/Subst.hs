@@ -126,9 +126,9 @@ apply (Subst f) (A t l (Right x) mhole)
 apply (Subst f) (A t l s (Right x))
   | Just (Hole mh) <- M.lookup x f = apply (Subst f) (A t l s (Left mh))
 apply f (A x l s tkns) = A (apply f x) (applySE f l) s (left (fmap $ applySE f) tkns)
-apply f (T x) = T (fffmap (applySE f) $ fmap (apply f) x)
+apply f (T x) = T (fffmap (applySE f) $ ffmap (applyL f) $ fmap (apply f) x)
 #else
-apply f (T x) = T (fmap (apply f) x)
+apply f (T x) = T (ffmap (applyL f) $ fmap (apply f) x)
 #endif
 apply f (Synonym n ts) = Synonym n (fmap (apply f) ts)
 
@@ -164,6 +164,9 @@ applyL :: Subst -> TCDataLayout -> TCDataLayout
 applyL (Subst m) (TLU n)
   | Just (Layout' l) <- M.lookup n m = applyL (Subst m) l
   | otherwise = TLU n
+applyL (Subst m) (TLDU n)
+  | Just (Layout' l) <- M.lookup n m = l
+  | otherwise = TLDU n
 applyL s (TLRecord fs) = TLRecord $ (\(a,b,c) -> (a,b,applyL s c)) <$> fs
 applyL s (TLVariant e fs) = TLVariant (applyL s e) $
                                       (\(a,b,c,d) -> (a,b,c,applyL s d)) <$> fs
